@@ -18,7 +18,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        url 'https://repo.spacehq.org/content/repositories/releases/'
+        url 'http://repo.johni0702.de/content/repositories/spacehq/'
     }
 }
 
