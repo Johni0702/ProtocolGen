@@ -5,7 +5,7 @@ ext.ROOT_PACKAGE = 'de.johni0702.mc.protocolgen'
 
 task genPacketSources << {
     def jsonSlurper = new JsonSlurper()
-    def jsonString = 'https://raw.githubusercontent.com/rom1504/node-minecraft-protocol/snapshot-1.9/protocol/protocol.json'.toURL().text
+    def jsonString = 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/snapshot-1.9/enums/protocol.json'.toURL().text
     // ugly hack to prevent uppercase field names
     jsonString = jsonString.replace('"UUID"', '"uuid"')
     def root = jsonSlurper.parseText(jsonString)
