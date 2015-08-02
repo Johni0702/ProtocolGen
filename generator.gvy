@@ -1,8 +1,6 @@
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 
-ext.ROOT_PACKAGE = 'de.johni0702.mc.protocolgen'
-
 task genPacketSources << {
     def jsonSlurper = new JsonSlurper()
     def jsonString = 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/snapshot-1.9/enums/protocol.json'.toURL().text
@@ -11,16 +9,25 @@ task genPacketSources << {
     def root = jsonSlurper.parseText(jsonString)
 
     root.each {
-        def pckg = ROOT_PACKAGE + '.' + it.key
+        def pckg = 'de.johni0702.mc.protocolgen.' + it.key
         def name = it.key.capitalize()
-        generateProtocol('Server' + name, pckg + '.server', it.value.toServer)
-        generateProtocol('Client' + name, pckg + '.client', it.value.toClient)
+        generateProtocol('src/gen/java', 'Server' + name, pckg + '.server', it.value.toServer)
+        generateProtocol('src/gen/java', 'Client' + name, pckg + '.client', it.value.toClient)
     }
 
 }
 
-def generateProtocol(protocolName, pckg, root) {
-    def folder = file('src/gen/java/' + pckg.replace('.', '/'))
+task genPacketTestSources << {
+    def jsonSlurper = new JsonSlurper()
+    def jsonString = file('src/test/resources/test_protocol.json').text
+    // ugly hack to prevent uppercase field names
+    jsonString = jsonString.replace('"UUID"', '"uuid"')
+    def root = jsonSlurper.parseText(jsonString)
+    generateProtocol('src/test/gen', 'Test', 'de.johni0702.mc.protocolgen.test', root)
+}
+
+def generateProtocol(sourceFolder, protocolName, pckg, root) {
+    def folder = file(sourceFolder + '/' + pckg.replace('.', '/'))
     if (!folder.exists()) folder.mkdirs()
     protocolName = 'Protocol' + protocolName
     def f = new File(folder, protocolName + '.java')
@@ -29,7 +36,7 @@ def generateProtocol(protocolName, pckg, root) {
     f << """// This file was generated automatically. Do not edit.
 package $pckg;
 
-import ${ROOT_PACKAGE}.Packet;
+import de.johni0702.mc.protocolgen.Packet;
 
 import java.util.HashMap;
 
@@ -40,16 +47,15 @@ public class $protocolName extends HashMap<Integer, Class<? extends Packet>> {
 
     root.sort{ it.value.id }.each {
         def name = 'Packet' + it.key.capitalize().replaceAll(/_\w/){ it[1].toUpperCase() }
-        generatePacket(pckg, name, it.value)
+        generatePacket(folder, pckg, name, it.value)
         f << "\t\tput($it.value.id, ${name}.class);\n"
     }
 
     f << '\t}\n}\n'
 }
 
-def generatePacket(pckg, name, root) {
+def generatePacket(folder, pckg, name, root) {
     println "Generating $pckg.$name"
-    def folder = file('src/gen/java/' + pckg.replace('.', '/'))
     if (!folder.exists()) folder.mkdirs()
     def f = new File(folder, name + '.java')
     if (f.exists()) f.delete()

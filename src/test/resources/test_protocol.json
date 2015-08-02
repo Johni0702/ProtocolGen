@@ -1,0 +1,330 @@
+{
+  "test_int": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "int"
+      }
+    ]
+  },
+  "test_varint": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "varint"
+      }
+    ]
+  },
+  "test_string": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "string"
+      }
+    ]
+  },
+  "test_short": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "short"
+      }
+    ]
+  },
+  "test_ushort": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "ushort"
+      }
+    ]
+  },
+  "test_long": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "long"
+      }
+    ]
+  },
+  "test_byte": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_ubyte": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "ubyte"
+      }
+    ]
+  },
+  "test_float": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "float"
+      }
+    ]
+  },
+  "test_double": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "double"
+      }
+    ]
+  },
+  "test_bool": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "bool"
+      }
+    ]
+  },
+  "test_uuid": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "uuid"
+      }
+    ]
+  },
+  "test_restBuffer": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "restBuffer"
+      }
+    ]
+  },
+  "test_position": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "position"
+      }
+    ]
+  },
+  "test_slot": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "slot"
+      }
+    ]
+  },
+  "test_entityMetadata": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "test",
+        "type": "entityMetadata"
+      }
+    ]
+  },
+  "test_condition_simple": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": "condition",
+        "typeArgs": {
+          "field": "before",
+          "values": [
+            2
+          ],
+          "type": "byte"
+        }
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_condition_inverted": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": "condition",
+        "typeArgs": {
+          "field": "before",
+          "values": [
+            2
+          ],
+          "different": true,
+          "type": "byte"
+        }
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_condition_multi": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": "condition",
+        "typeArgs": {
+          "field": "before",
+          "values": [
+            2, 3, 4
+          ],
+          "type": "byte"
+        }
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_array": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "count",
+        "typeArgs": {
+          "type": "byte",
+          "countFor": "inner"
+        }
+      },
+      {
+        "name": "inner",
+        "type": "array",
+        "typeArgs": {
+          "count": "before",
+          "type": "short"
+        }
+      }
+    ]
+  },
+  "test_buffer": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "count",
+        "typeArgs": {
+          "type": "byte",
+          "countFor": "inner"
+        }
+      },
+      {
+        "name": "inner",
+        "type": "buffer",
+        "typeArgs": {
+          "count": "before"
+        }
+      }
+    ]
+  },
+  "test_container_simple": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "content",
+        "type": "container",
+        "typeArgs": {
+          "fields": [
+            {
+              "name": "inner",
+              "type": "byte"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "test_container_multi": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "content",
+        "type": "container",
+        "typeArgs": {
+          "fields": [
+            {
+              "name": "innerContent",
+              "type": "container",
+              "typeArgs": {
+                "fields": [
+                  {
+                    "name": "inner",
+                    "type": "byte"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "test_container_outer_condition": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "outer",
+        "type": "byte"
+      },
+      {
+        "name": "content",
+        "type": "container",
+        "typeArgs": {
+          "fields": [
+            {
+              "name": "inner",
+              "type": "condition",
+              "typeArgs": {
+                "field": "outer",
+                "values": [
+                  1
+                ],
+                "type": "byte"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
