@@ -75,6 +75,16 @@ public final class ItemStack {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "ItemStack{" +
+                "id=" + id +
+                ", amount=" + amount +
+                ", data=" + data +
+                ", nbt=" + nbt +
+                '}';
+    }
+
     public static ItemStack read(final NetInput in) throws IOException {
         int id = in.readShort();
         if (id == -1) {

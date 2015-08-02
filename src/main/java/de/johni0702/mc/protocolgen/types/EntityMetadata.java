@@ -22,6 +22,29 @@ public class EntityMetadata {
         data.put(key, obj);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EntityMetadata metadata = (EntityMetadata) o;
+
+        return data.equals(metadata.data);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return data.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "EntityMetadata{" +
+                "data=" + data +
+                '}';
+    }
+
     public static EntityMetadata read(NetInput in) throws IOException {
         EntityMetadata metadata = new EntityMetadata();
         int b;
