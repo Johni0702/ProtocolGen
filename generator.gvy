@@ -1,33 +1,44 @@
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 
-task genPacketSources << {
-    def jsonSlurper = new JsonSlurper()
-    def jsonString = 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/snapshot-1.9/enums/protocol.json'.toURL().text
-    // ugly hack to prevent uppercase field names
-    jsonString = jsonString.replace('"UUID"', '"uuid"')
-    def root = jsonSlurper.parseText(jsonString)
+task genPacketSources() {
+    def protocolFile = file('src/gen/resources/protocol.json')
+    def outputFolder = file('src/gen/java')
+    inputs.file protocolFile
+    outputs.dir outputFolder
+    doLast {
+        def jsonSlurper = new JsonSlurper()
+        def jsonString = protocolFile.text
+        // ugly hack to prevent uppercase field names
+        jsonString = jsonString.replace('"UUID"', '"uuid"')
+        def root = jsonSlurper.parseText(jsonString)
 
-    root.each {
-        def pckg = 'de.johni0702.mc.protocolgen.' + it.key
-        def name = it.key.capitalize()
-        generateProtocol('src/gen/java', 'Server' + name, pckg + '.server', it.value.toServer)
-        generateProtocol('src/gen/java', 'Client' + name, pckg + '.client', it.value.toClient)
+        root.each {
+            def pckg = 'de.johni0702.mc.protocolgen.' + it.key
+            def name = it.key.capitalize()
+            generateProtocol(outputFolder, 'Server' + name, pckg + '.server', it.value.toServer)
+            generateProtocol(outputFolder, 'Client' + name, pckg + '.client', it.value.toClient)
+        }
     }
-
 }
 
-task genPacketTestSources << {
-    def jsonSlurper = new JsonSlurper()
-    def jsonString = file('src/test/resources/test_protocol.json').text
-    // ugly hack to prevent uppercase field names
-    jsonString = jsonString.replace('"UUID"', '"uuid"')
-    def root = jsonSlurper.parseText(jsonString)
-    generateProtocol('src/test/gen', 'Test', 'de.johni0702.mc.protocolgen.test', root)
+task genPacketTestSources() {
+    def protocolFile = file('src/test/resources/test_protocol.json')
+    def outputFolder = file('src/test/gen')
+    inputs.file protocolFile
+    outputs.dir outputFolder
+    doLast {
+        def jsonSlurper = new JsonSlurper()
+        def jsonString = protocolFile.text
+        // ugly hack to prevent uppercase field names
+        jsonString = jsonString.replace('"UUID"', '"uuid"')
+        def root = jsonSlurper.parseText(jsonString)
+        generateProtocol(outputFolder, 'Test', 'de.johni0702.mc.protocolgen.test', root)
+    }
 }
 
 def generateProtocol(sourceFolder, protocolName, pckg, root) {
-    def folder = file(sourceFolder + '/' + pckg.replace('.', '/'))
+    def folder = new File(sourceFolder, pckg.replace('.', '/'))
     if (!folder.exists()) folder.mkdirs()
     protocolName = 'Protocol' + protocolName
     def f = new File(folder, protocolName + '.java')

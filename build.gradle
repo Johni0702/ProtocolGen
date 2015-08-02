@@ -43,5 +43,14 @@ dependencies {
     testCompile 'org.powermock:powermock-api-mockito:1.6.2'
 }
 
+task downloadPacketJson << {
+    def f = file('src/gen/resources/protocol.json')
+    f.getParentFile().mkdirs()
+    f.delete()
+    f << 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/snapshot-1.9/enums/protocol.json'.toURL().text
+}
+
+genPacketSources.dependsOn ':downloadPacketJson'
+
 compileJava.dependsOn ':genPacketSources'
 compileTestJava.dependsOn ':genPacketTestSources'
