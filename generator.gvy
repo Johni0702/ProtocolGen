@@ -483,7 +483,7 @@ class ContainerField extends Field {
 
     @Override
     void generateDeclaration(File file, String indent) {
-        file << "$indent$javaType $name;"
+        file << "${indent}public $javaType $name;\n"
     }
 
     @Override
