@@ -38,4 +38,5 @@ dependencies {
     testCompile 'org.powermock:powermock-api-mockito:1.6.2'
 }
 
+compileJava.dependsOn ':genPacketSources'
 compileTestJava.dependsOn ':genPacketTestSources'
