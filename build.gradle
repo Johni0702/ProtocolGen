@@ -19,6 +19,11 @@ sourceSets {
     }
 }
 
+clean {
+    delete "src/gen"
+    delete "src/test/gen"
+}
+
 repositories {
     mavenCentral()
     jcenter()
