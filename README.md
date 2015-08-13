@@ -1,4 +1,4 @@
-Reads the json protocol info (currently from [here](https://github.com/PrismarineJS/minecraft-data/blob/snapshot-1.9/enums/protocol.json) and turns it into java source files.
+Reads the json protocol info (currently from [here](https://github.com/PrismarineJS/minecraft-data/blob/1.9/enums/protocol.json) and turns it into java source files.
 
 To convert json to Java run `./gradlew genPacketSource`.
 To compile the generated files into a jar file run `./gradlew build`.
