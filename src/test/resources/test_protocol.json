@@ -257,6 +257,31 @@
       }
     ]
   },
+  "test_array_count_type": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "inner",
+        "type": "array",
+        "typeArgs": {
+          "countType": "byte",
+          "type": "short"
+        }
+      }
+    ]
+  },
+  "test_buffer_count_type": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "inner",
+        "type": "buffer",
+        "typeArgs": {
+          "countType": "byte"
+        }
+      }
+    ]
+  },
   "test_container_simple": {
     "id": "0x00",
     "fields": [

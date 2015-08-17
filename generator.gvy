@@ -98,12 +98,15 @@ class Parser {
                 field.child = parseField(it.typeArgs, field, fields, referenced, containers)
                 return field
             case 'buffer':
-                Field count
-                CountTransformation countTransformation
-                (count, countTransformation) = parseCount(it.typeArgs.count, fields)
-                referenced.add(count)
-                def field = new BufferField(parent, it.name, count, countTransformation)
-                return field
+                if (it.typeArgs.countType == null) {
+                    Field count
+                    CountTransformation countTransformation
+                    (count, countTransformation) = parseCount(it.typeArgs.count, fields)
+                    referenced.add(count)
+                    return new BufferField(parent, it.name, count, countTransformation)
+                } else {
+                    return new CountedBufferField(parent, it.name, it.typeArgs.countType)
+                }
             case 'condition':
                 def field = it
                 def conditions = it.typeArgs.values.collect {
@@ -121,12 +124,18 @@ class Parser {
                 field.child = parseField(it.typeArgs, field, fields, referenced, containers)
                 return field
             case 'array':
-                Field count
-                CountTransformation countTransformation
-                (count, countTransformation) = parseCount(it.typeArgs.count, fields)
-                referenced.add(count)
-                def field = new ArrayField(parent, it.name, count, countTransformation)
-                field.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                def field
+                if (it.typeArgs.countType == null) {
+                    Field count
+                    CountTransformation countTransformation
+                    (count, countTransformation) = parseCount(it.typeArgs.count, fields)
+                    referenced.add(count)
+                    field = new ArrayField(parent, it.name, count, countTransformation)
+                    field.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                } else {
+                    field = new CountedArrayField(parent, it.name, it.typeArgs.countType)
+                    field.counted.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                }
                 return field
             case 'container':
                 def field = new ContainerField(parent, it.name, it.typeArgs.fields)
@@ -328,6 +337,53 @@ class CountField extends Field {
         def transformed = countTransformation.transform(file, indent, forField.count)
         file << "${indent}int $name = $transformed;\n"
         child.generateWrite(file, indent, name)
+    }
+}
+
+class CountedField extends Field {
+    Field count
+    Field counted
+
+    CountedField(Field parent, String name, String countType) {
+        super(parent, name)
+        count = new CountField(this, "${->this.name}\$count")
+        count.child = new SimpleField(count, countType, null)
+    }
+
+    @Override
+    void generateDeclaration(File file, String indent) {
+        counted.generateDeclaration(file, indent)
+    }
+
+    @Override
+    void generateLocalDeclaration(File file, String indent) {
+        count.generateLocalDeclaration(file, indent)
+    }
+
+    @Override
+    void generateRead(File file, String indent, String name) {
+        count.generateRead(file, indent, name + '$count')
+        counted.generateRead(file, indent, name)
+    }
+
+    @Override
+    void generateWrite(File file, String indent, String name) {
+        count.generateWrite(file, indent, name + '$count')
+        counted.generateWrite(file, indent, name)
+    }
+}
+
+class CountedBufferField extends CountedField {
+    CountedBufferField(Field parent, String name, String countType) {
+        super(parent, name, countType)
+        counted = new BufferField(this, name, count, new NoCountTransformation())
+    }
+}
+
+class CountedArrayField extends CountedField {
+    CountedArrayField(Field parent, String name, String countType) {
+        super(parent, name, countType)
+        counted = new ArrayField(this, name, count, new NoCountTransformation())
     }
 }
 
