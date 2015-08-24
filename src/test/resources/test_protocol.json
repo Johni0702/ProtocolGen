@@ -152,14 +152,16 @@
       },
       {
         "name": "inner",
-        "type": "condition",
-        "typeArgs": {
-          "field": "before",
-          "values": [
-            2
-          ],
-          "type": "byte"
-        }
+        "type": [
+          "condition",
+          {
+            "field": "before",
+            "values": [
+              2
+            ],
+            "type": "byte"
+          }
+        ]
       },
       {
         "name": "after",
@@ -176,15 +178,17 @@
       },
       {
         "name": "inner",
-        "type": "condition",
-        "typeArgs": {
-          "field": "before",
-          "values": [
-            2
-          ],
-          "different": true,
-          "type": "byte"
-        }
+        "type": [
+          "condition",
+          {
+            "field": "before",
+            "values": [
+              2
+            ],
+            "different": true,
+            "type": "byte"
+          }
+        ]
       },
       {
         "name": "after",
@@ -201,14 +205,16 @@
       },
       {
         "name": "inner",
-        "type": "condition",
-        "typeArgs": {
-          "field": "before",
-          "values": [
-            2, 3, 4
-          ],
-          "type": "byte"
-        }
+        "type": [
+          "condition",
+          {
+            "field": "before",
+            "values": [
+              2, 3, 4
+            ],
+            "type": "byte"
+          }
+        ]
       },
       {
         "name": "after",
@@ -221,19 +227,23 @@
     "fields": [
       {
         "name": "before",
-        "type": "count",
-        "typeArgs": {
-          "type": "byte",
-          "countFor": "inner"
-        }
+        "type": [
+          "count",
+          {
+            "type": "byte",
+            "countFor": "inner"
+          }
+        ]
       },
       {
         "name": "inner",
-        "type": "array",
-        "typeArgs": {
-          "count": "before",
-          "type": "short"
-        }
+        "type": [
+          "array",
+          {
+            "count": "before",
+            "type": "short"
+          }
+        ]
       }
     ]
   },
@@ -242,18 +252,22 @@
     "fields": [
       {
         "name": "before",
-        "type": "count",
-        "typeArgs": {
-          "type": "byte",
-          "countFor": "inner"
-        }
+        "type": [
+          "count",
+          {
+            "type": "byte",
+            "countFor": "inner"
+          }
+        ]
       },
       {
         "name": "inner",
-        "type": "buffer",
-        "typeArgs": {
-          "count": "before"
-        }
+        "type": [
+          "buffer",
+          {
+            "count": "before"
+          }
+        ]
       }
     ]
   },
@@ -262,11 +276,13 @@
     "fields": [
       {
         "name": "inner",
-        "type": "array",
-        "typeArgs": {
-          "countType": "byte",
-          "type": "short"
-        }
+        "type": [
+          "array",
+          {
+            "countType": "byte",
+            "type": "short"
+          }
+        ]
       }
     ]
   },
@@ -275,10 +291,12 @@
     "fields": [
       {
         "name": "inner",
-        "type": "buffer",
-        "typeArgs": {
-          "countType": "byte"
-        }
+        "type": [
+          "buffer",
+          {
+            "countType": "byte"
+          }
+        ]
       }
     ]
   },
@@ -287,15 +305,15 @@
     "fields": [
       {
         "name": "content",
-        "type": "container",
-        "typeArgs": {
-          "fields": [
+        "type": [
+          "container",
+          [
             {
               "name": "inner",
               "type": "byte"
             }
           ]
-        }
+        ]
       }
     ]
   },
@@ -304,23 +322,23 @@
     "fields": [
       {
         "name": "content",
-        "type": "container",
-        "typeArgs": {
-          "fields": [
+        "type": [
+          "container",
+          [
             {
               "name": "innerContent",
-              "type": "container",
-              "typeArgs": {
-                "fields": [
+              "type": [
+                "container",
+                [
                   {
                     "name": "inner",
                     "type": "byte"
                   }
                 ]
-              }
+              ]
             }
           ]
-        }
+        ]
       }
     ]
   },
@@ -333,22 +351,24 @@
       },
       {
         "name": "content",
-        "type": "container",
-        "typeArgs": {
-          "fields": [
+        "type": [
+          "container",
+          [
             {
               "name": "inner",
-              "type": "condition",
-              "typeArgs": {
-                "field": "outer",
-                "values": [
-                  1
-                ],
-                "type": "byte"
-              }
+              "type": [
+                "condition",
+                {
+                  "field": "outer",
+                  "values": [
+                    1
+                  ],
+                  "type": "byte"
+                }
+              ]
             }
           ]
-        }
+        ]
       }
     ]
   }

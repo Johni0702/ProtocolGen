@@ -92,57 +92,62 @@ class Parser {
     }
 
     static Field parseField(it, Field parent, Map<String, Field> fields, Set<Field> referenced, Set<ContainerField> containers) {
-        switch (it.type) {
+        def type = it.type
+        def typeArgs = null
+        if (!(type instanceof String)) {
+            typeArgs = type[1]
+            type = type[0]
+        }
+        switch (type) {
             case 'count':
                 def field = new CountField(parent, it.name)
-                field.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                field.child = parseField(typeArgs, field, fields, referenced, containers)
                 return field
             case 'buffer':
-                if (it.typeArgs.countType == null) {
+                if (typeArgs.countType == null) {
                     Field count
                     CountTransformation countTransformation
-                    (count, countTransformation) = parseCount(it.typeArgs.count, fields)
+                    (count, countTransformation) = parseCount(typeArgs.count, fields)
                     referenced.add(count)
                     return new BufferField(parent, it.name, count, countTransformation)
                 } else {
-                    return new CountedBufferField(parent, it.name, it.typeArgs.countType)
+                    return new CountedBufferField(parent, it.name, typeArgs.countType)
                 }
             case 'condition':
-                def field = it
-                def conditions = it.typeArgs.values.collect {
+                def conditions = typeArgs.values.collect {
                     if (it instanceof String) {
-                        /"$it".equals($field.typeArgs.field)/
+                        /"$it".equals($typeArgs.field)/
                     } else {
-                        "$field.typeArgs.field == $it"
+                        "$typeArgs.field == $it"
                     }
                 }
-                if (it.typeArgs.different as boolean) {
+                if (typeArgs.different as boolean) {
                     conditions = conditions.collect { "!($it)" }
                 }
-                referenced.add(fields.get(it.typeArgs.field))
-                field = new ConditionField(parent, it.name, conditions.join(' || '))
-                field.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                referenced.add(fields.get(typeArgs.field))
+                def field = new ConditionField(parent, it.name, conditions.join(' || '))
+                field.child = parseField(typeArgs, field, fields, referenced, containers)
                 return field
             case 'array':
                 def field
-                if (it.typeArgs.countType == null) {
+                if (typeArgs.countType == null) {
                     Field count
                     CountTransformation countTransformation
-                    (count, countTransformation) = parseCount(it.typeArgs.count, fields)
+                    (count, countTransformation) = parseCount(typeArgs.count, fields)
                     referenced.add(count)
                     field = new ArrayField(parent, it.name, count, countTransformation)
-                    field.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                    field.child = parseField(typeArgs, field, fields, referenced, containers)
                 } else {
-                    field = new CountedArrayField(parent, it.name, it.typeArgs.countType)
-                    field.counted.child = parseField(it.typeArgs, field, fields, referenced, containers)
+                    field = new CountedArrayField(parent, it.name, typeArgs.countType)
+                    field.counted.child = parseField(typeArgs, field, fields, referenced, containers)
                 }
                 return field
             case 'container':
-                def field = new ContainerField(parent, it.name, it.typeArgs.fields)
+                def field = new ContainerField(parent, it.name, typeArgs)
                 containers.add(field)
                 return field
             default:
-                return new SimpleField(parent, it.type, it.name)
+                return new SimpleField(parent, type, it.name)
         }
     }
 
