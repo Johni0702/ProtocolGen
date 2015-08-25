@@ -1,15 +1,10 @@
 package de.johni0702.mc.protocolgen.types;
 
+import io.netty.buffer.ByteBuf;
 import org.spacehq.opennbt.NBTIO;
 import org.spacehq.opennbt.tag.builtin.CompoundTag;
-import org.spacehq.packetlib.io.NetInput;
-import org.spacehq.packetlib.io.NetOutput;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 public final class ItemStack {
     private final int id;
@@ -85,7 +80,7 @@ public final class ItemStack {
                 '}';
     }
 
-    public static ItemStack read(final NetInput in) throws IOException {
+    public static ItemStack read(final ByteBuf in) throws IOException {
         int id = in.readShort();
         if (id == -1) {
             return null;
@@ -102,7 +97,7 @@ public final class ItemStack {
         }
     }
 
-    public static void write(ItemStack is, final NetOutput out) throws IOException {
+    public static void write(ItemStack is, final ByteBuf out) throws IOException {
         if (is == null) {
             out.writeShort(-1);
         } else {

@@ -2,8 +2,6 @@ package de.johni0702.mc.protocolgen;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.spacehq.packetlib.tcp.io.ByteBufNetInput;
-import org.spacehq.packetlib.tcp.io.ByteBufNetOutput;
 
 import java.io.IOException;
 
@@ -24,7 +22,7 @@ public class PacketReadWriteTest {
     }
 
     protected void read(Packet packet, byte...bytes) throws IOException {
-        packet.read(new ByteBufNetInput(Unpooled.wrappedBuffer(bytes)));
+        packet.read(Unpooled.wrappedBuffer(bytes));
     }
 
     protected void write(Packet packet, int...expected) throws IOException {
@@ -34,7 +32,7 @@ public class PacketReadWriteTest {
     protected void write(Packet packet, byte...expected) throws IOException {
         ByteBuf buf = Unpooled.buffer();
         try {
-            packet.write(new ByteBufNetOutput(buf));
+            packet.write(buf);
 
             byte[] data = new byte[buf.readableBytes()];
             buf.readBytes(data);
