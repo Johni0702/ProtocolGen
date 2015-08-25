@@ -1,11 +1,10 @@
 package de.johni0702.mc.protocolgen;
 
-import org.spacehq.packetlib.io.NetInput;
-import org.spacehq.packetlib.io.NetOutput;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
 public interface Packet {
-    void read(NetInput in) throws IOException;
-    void write(NetOutput out) throws IOException;
+    void read(ByteBuf in) throws IOException;
+    void write(ByteBuf out) throws IOException;
 }

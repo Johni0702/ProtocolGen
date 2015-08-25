@@ -1,7 +1,6 @@
 package de.johni0702.mc.protocolgen.types;
 
-import org.spacehq.packetlib.io.NetInput;
-import org.spacehq.packetlib.io.NetOutput;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 
@@ -58,12 +57,12 @@ public final class Position {
                 '}';
     }
 
-    public static Position read(NetInput in) throws IOException {
+    public static Position read(ByteBuf in) throws IOException {
         long val = in.readLong();
         return new Position((int) (val >> 38), (int) ((val >> 26) & 0xfff), (int) (val << 38 >> 38));
     }
 
-    public void write(NetOutput out) throws IOException {
+    public void write(ByteBuf out) throws IOException {
         out.writeLong((((long)x & 0x3FFFFFF) << 38) | (((long)y & 0xFFF) << 26) | (z & 0x3FFFFFF));
     }
 }

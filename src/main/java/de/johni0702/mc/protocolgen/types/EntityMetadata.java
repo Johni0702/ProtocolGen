@@ -1,8 +1,10 @@
 package de.johni0702.mc.protocolgen.types;
 
-import org.spacehq.packetlib.io.NetInput;
-import org.spacehq.packetlib.io.NetOutput;
+import de.johni0702.mc.protocolgen.NetUtils;
+import io.netty.buffer.ByteBuf;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +47,7 @@ public class EntityMetadata {
                 '}';
     }
 
-    public static EntityMetadata read(NetInput in) throws IOException {
+    public static EntityMetadata read(ByteBuf in) throws IOException {
         EntityMetadata metadata = new EntityMetadata();
         int b;
         while ((b = in.readUnsignedByte()) != 127) {
@@ -66,7 +68,7 @@ public class EntityMetadata {
                     value = in.readFloat();
                     break;
                 case 4:
-                    value = in.readString();
+                    value = NetUtils.readString(in);
                     break;
                 case 5:
                     value = ItemStack.read(in);
@@ -85,7 +87,7 @@ public class EntityMetadata {
         return metadata;
     }
 
-    public void write(NetOutput out) throws IOException {
+    public void write(ByteBuf out) throws IOException {
         for (Map.Entry<Integer, Object> e : data.entrySet()) {
             int key = e.getKey();
             Object value = e.getValue();
@@ -116,7 +118,7 @@ public class EntityMetadata {
                     out.writeFloat((Float) value);
                     break;
                 case 4:
-                    out.writeString((String) value);
+                    NetUtils.writeString(out, (String) value);
                     break;
                 case 5:
                     ItemStack.write((ItemStack) value, out);

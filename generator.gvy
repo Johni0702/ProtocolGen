@@ -200,7 +200,7 @@ class Parser {
 
         // Read
         def args = referenced.collect { ", $it.type.java $it.name" }.join('')
-        f << indent + (indent.length() == 1 ? 'public' : 'private') + " void read(NetInput in$args) throws IOException {\n"
+        f << indent + (indent.length() == 1 ? 'public' : 'private') + " void read(ByteBuf in$args) throws IOException {\n"
         fields.values().each { it.generateLocalDeclaration(f, indent + '\t') }
         fields.values().each { it.generateRead(f, indent + '\t', it.name) }
         f << indent + '}\n'
@@ -208,7 +208,7 @@ class Parser {
 
         // Write
         args = referenced.collect { ", $it.type.java $it.name" }.join('')
-        f << indent + (indent.length() == 1 ? 'public' : 'private') + " void write(NetOutput out$args) throws IOException {\n"
+        f << indent + (indent.length() == 1 ? 'public' : 'private') + " void write(ByteBuf out$args) throws IOException {\n"
         fields.values().each { it.generateWrite(f, indent + '\t', it.name) }
         f << indent + '}\n'
         f << '\n'
@@ -241,8 +241,8 @@ class Type {
 
     static {
         values << new Type('int', 'int', 'in.readInt()', {"out.writeInt($it)"}, "0");
-        values << new Type('int', 'varint', 'in.readVarInt()', {"out.writeVarInt($it)"}, "0");
-        values << new Type('String', 'string', 'in.readString()', {"out.writeString($it)"}, "null");
+        values << new Type('int', 'varint', 'NetUtils.readVarInt(in)', {"NetUtils.writeVarInt(out, $it)"}, "0");
+        values << new Type('String', 'string', 'NetUtils.readString(in)', {"NetUtils.writeString(out, $it)"}, "null");
         values << new Type('short', 'short', 'in.readShort()', {"out.writeShort($it)"}, "0");
         values << new Type('int', 'ushort', 'in.readUnsignedShort()', {"out.writeShort($it)"}, "0");
         values << new Type('long', 'long', 'in.readLong()', {"out.writeLong($it)"}, "0");
@@ -251,8 +251,8 @@ class Type {
         values << new Type('float', 'float', 'in.readFloat()', {"out.writeFloat($it)"}, "0");
         values << new Type('double', 'double', 'in.readDouble()', {"out.writeDouble($it)"}, "0");
         values << new Type('boolean', 'bool', 'in.readBoolean()', {"out.writeBoolean($it)"}, "false");
-        values << new Type('UUID', 'uuid', 'in.readUUID()', {"out.writeUUID($it)"}, "null");
-        values << new Type('byte[]', 'restBuffer', 'in.readBytes(in.available())', {"out.writeBytes($it)"}, "null");
+        values << new Type('UUID', 'uuid', 'NetUtils.readUUID(in)', {"NetUtils.writeUUID(out, $it)"}, "null");
+        values << new Type('byte[]', 'restBuffer', 'NetUtils.readBytes(in, in.readableBytes())', {"out.writeBytes($it)"}, "null");
         values << new Type('Position', 'position', 'Position.read(in)', {"${it}.write(out)"}, "null");
         values << new Type('ItemStack', 'slot', 'ItemStack.read(in)', {"ItemStack.write($it, out)"}, "null");
         values << new Type('EntityMetadata', 'entityMetadata', 'EntityMetadata.read(in)', {"${it}.write(out)"}, "null");
@@ -471,7 +471,7 @@ class BufferField extends Field implements CountField.For {
 
     @Override
     void generateRead(File file, String indent, String name) {
-        file << indent + "$name = in.readBytes($count.name);\n"
+        file << indent + "$name = NetUtils.readBytes(in, $count.name);\n"
     }
 
     @Override
@@ -747,9 +747,9 @@ def generatePacketHeader(f, pckg, name) {
 package $pckg;
 
 import de.johni0702.mc.protocolgen.Packet;
+import de.johni0702.mc.protocolgen.NetUtils;
 import de.johni0702.mc.protocolgen.types.*;
-import org.spacehq.packetlib.io.NetInput;
-import org.spacehq.packetlib.io.NetOutput;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.util.UUID;
