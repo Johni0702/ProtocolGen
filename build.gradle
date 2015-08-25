@@ -50,7 +50,7 @@ task downloadPacketJson << {
     f << 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/1.9/enums/protocol.json'.toURL().text
 }
 
-genPacketSources.dependsOn ':downloadPacketJson'
+genPacketSources.dependsOn downloadPacketJson
 
-compileJava.dependsOn ':genPacketSources'
-compileTestJava.dependsOn ':genPacketTestSources'
+compileJava.dependsOn genPacketSources
+compileTestJava.dependsOn genPacketTestSources
