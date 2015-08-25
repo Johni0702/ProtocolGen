@@ -1,7 +1,7 @@
 package de.johni0702.mc.protocolgen.condition;
 
 import de.johni0702.mc.protocolgen.PacketReadWriteTest;
-import de.johni0702.mc.protocolgen.test.PacketTestConditionMulti;
+import de.johni0702.mc.protocolgen.test.PacketTestSwitchSimple;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -9,12 +9,12 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestConditionMulti extends PacketReadWriteTest {
-    private PacketTestConditionMulti packet;
+public class TestSwitchSimple extends PacketReadWriteTest {
+    private PacketTestSwitchSimple packet;
 
     @Before
     public void init() {
-        packet = new PacketTestConditionMulti();
+        packet = new PacketTestSwitchSimple();
     }
 
     @Test
@@ -29,14 +29,6 @@ public class TestConditionMulti extends PacketReadWriteTest {
     public void testReadActive() throws IOException {
         read(packet, 2, 3, 4);
         assertEquals(2, packet.before);
-        assertEquals(3, packet.inner);
-        assertEquals(4, packet.after);
-        read(packet, 3, 3, 4);
-        assertEquals(3, packet.before);
-        assertEquals(3, packet.inner);
-        assertEquals(4, packet.after);
-        read(packet, 4, 3, 4);
-        assertEquals(4, packet.before);
         assertEquals(3, packet.inner);
         assertEquals(4, packet.after);
     }
@@ -54,13 +46,5 @@ public class TestConditionMulti extends PacketReadWriteTest {
         packet.inner = 3;
         packet.after = 4;
         write(packet, 2, 3, 4);
-        packet.before = 3;
-        packet.inner = 3;
-        packet.after = 4;
-        write(packet, 3, 3, 4);
-        packet.before = 4;
-        packet.inner = 3;
-        packet.after = 4;
-        write(packet, 4, 3, 4);
     }
 }
