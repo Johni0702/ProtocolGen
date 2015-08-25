@@ -84,15 +84,18 @@ class Parser {
         def fields = [:]
         root.each {
             def referenced = new HashSet()
-            def field = parseField(it, parent, fields + parentFields, referenced, containers)
+            def field = parseFieldWithName(it, parent, fields + parentFields, referenced, containers)
             referencedFields.addAll(referenced)
             fields.put(it.name, field)
         }
         return fields
     }
 
-    static Field parseField(it, Field parent, Map<String, Field> fields, Set<Field> referenced, Set<ContainerField> containers) {
-        def type = it.type
+    static Field parseFieldWithName(it, Field parent, Map<String, Field> fields, Set<Field> referenced, Set<ContainerField> containers) {
+        parseField(it.type, it.name, parent, fields, referenced, containers)
+    }
+
+    static Field parseField(type, name, Field parent, Map<String, Field> fields, Set<Field> referenced, Set<ContainerField> containers) {
         def typeArgs = null
         if (!(type instanceof String)) {
             typeArgs = type[1]
@@ -100,8 +103,8 @@ class Parser {
         }
         switch (type) {
             case 'count':
-                def field = new CountField(parent, it.name)
-                field.child = parseField(typeArgs, field, fields, referenced, containers)
+                def field = new CountField(parent, name)
+                field.child = parseFieldWithName(typeArgs, field, fields, referenced, containers)
                 return field
             case 'buffer':
                 if (typeArgs.countType == null) {
@@ -109,24 +112,41 @@ class Parser {
                     CountTransformation countTransformation
                     (count, countTransformation) = parseCount(typeArgs.count, fields)
                     referenced.add(count)
-                    return new BufferField(parent, it.name, count, countTransformation)
+                    return new BufferField(parent, name, count, countTransformation)
                 } else {
-                    return new CountedBufferField(parent, it.name, typeArgs.countType)
+                    return new CountedBufferField(parent, name, Type.fromJson(typeArgs.countType))
                 }
-            case 'condition':
-                def conditions = typeArgs.values.collect {
-                    if (it instanceof String) {
-                        /"$it".equals($typeArgs.field)/
+            case 'switch':
+                def compareTo = typeArgs.compareTo;
+                if (compareTo.startsWith('this.')) {
+                    compareTo = compareTo.substring('this.'.length())
+                }
+                compareTo = fields.get(compareTo)
+                referenced.add(compareTo)
+                def voids = []
+                Field contentField = null
+                SwitchField field = new SwitchField(parent, name, compareTo)
+                typeArgs.fields.each {
+                    def f = parseField(it.value, null, field, fields, referenced, containers)
+                    if (f instanceof VoidField) {
+                        voids << f
                     } else {
-                        "$typeArgs.field == $it"
+                        contentField = f
+                    }
+                    field.cases.put(it.key, f)
+                }
+                if (typeArgs.default != null) {
+                    field.defaultCase = parseField(typeArgs.default, null, field, fields, referenced, containers)
+                    if (field.defaultCase instanceof VoidField) {
+                        voids << field.defaultCase
+                    } else {
+                        contentField = field.defaultCase
                     }
                 }
-                if (typeArgs.different as boolean) {
-                    conditions = conditions.collect { "!($it)" }
+                voids.each {
+                    it.type = contentField.type
                 }
-                referenced.add(fields.get(typeArgs.field))
-                def field = new ConditionField(parent, it.name, conditions.join(' || '))
-                field.child = parseField(typeArgs, field, fields, referenced, containers)
+                field.child = contentField
                 return field
             case 'array':
                 def field
@@ -135,19 +155,21 @@ class Parser {
                     CountTransformation countTransformation
                     (count, countTransformation) = parseCount(typeArgs.count, fields)
                     referenced.add(count)
-                    field = new ArrayField(parent, it.name, count, countTransformation)
-                    field.child = parseField(typeArgs, field, fields, referenced, containers)
+                    field = new ArrayField(parent, name, count, countTransformation)
+                    field.child = parseFieldWithName(typeArgs, field, fields, referenced, containers)
                 } else {
-                    field = new CountedArrayField(parent, it.name, typeArgs.countType)
-                    field.counted.child = parseField(typeArgs, field, fields, referenced, containers)
+                    field = new CountedArrayField(parent, name, Type.fromJson(typeArgs.countType))
+                    field.counted.child = parseFieldWithName(typeArgs, field, fields, referenced, containers)
                 }
                 return field
             case 'container':
-                def field = new ContainerField(parent, it.name, typeArgs)
+                def field = new ContainerField(parent, name, typeArgs)
                 containers.add(field)
                 return field
+            case 'void':
+                return new VoidField(parent, name)
             default:
-                return new SimpleField(parent, type, it.name)
+                return new SimpleField(parent, Type.fromJson(type), name)
         }
     }
 
@@ -177,7 +199,7 @@ class Parser {
         f << '\n'
 
         // Read
-        def args = referenced.collect { ", $it.javaType $it.name" }.join('')
+        def args = referenced.collect { ", $it.type.java $it.name" }.join('')
         f << indent + (indent.length() == 1 ? 'public' : 'private') + " void read(NetInput in$args) throws IOException {\n"
         fields.values().each { it.generateLocalDeclaration(f, indent + '\t') }
         fields.values().each { it.generateRead(f, indent + '\t', it.name) }
@@ -185,7 +207,7 @@ class Parser {
         f << '\n'
 
         // Write
-        args = referenced.collect { ", $it.javaType $it.name" }.join('')
+        args = referenced.collect { ", $it.type.java $it.name" }.join('')
         f << indent + (indent.length() == 1 ? 'public' : 'private') + " void write(NetOutput out$args) throws IOException {\n"
         fields.values().each { it.generateWrite(f, indent + '\t', it.name) }
         f << indent + '}\n'
@@ -193,6 +215,47 @@ class Parser {
 
         // Containers / Inner classes
         containers.each { it.generateClass(f, indent) }
+    }
+}
+
+class Type {
+    static List<Type> values = []
+
+    final String java
+    final String json
+    final String read
+    final Closure<String> write
+    final String defaultValue
+
+    Type(String java, String json, String read, Closure<String> write, String defaultValue) {
+        this.java = java
+        this.json = json
+        this.read = read
+        this.write = write
+        this.defaultValue = defaultValue
+    }
+
+    public static Type fromJson(String jsonType) {
+        values.find {it.json == jsonType}
+    }
+
+    static {
+        values << new Type('int', 'int', 'in.readInt()', {"out.writeInt($it)"}, "0");
+        values << new Type('int', 'varint', 'in.readVarInt()', {"out.writeVarInt($it)"}, "0");
+        values << new Type('String', 'string', 'in.readString()', {"out.writeString($it)"}, "null");
+        values << new Type('short', 'short', 'in.readShort()', {"out.writeShort($it)"}, "0");
+        values << new Type('int', 'ushort', 'in.readUnsignedShort()', {"out.writeShort($it)"}, "0");
+        values << new Type('long', 'long', 'in.readLong()', {"out.writeLong($it)"}, "0");
+        values << new Type('byte', 'byte', 'in.readByte()', {"out.writeByte($it)"}, "0");
+        values << new Type('int', 'ubyte', 'in.readUnsignedByte()', {"out.writeByte($it)"}, "0");
+        values << new Type('float', 'float', 'in.readFloat()', {"out.writeFloat($it)"}, "0");
+        values << new Type('double', 'double', 'in.readDouble()', {"out.writeDouble($it)"}, "0");
+        values << new Type('boolean', 'bool', 'in.readBoolean()', {"out.writeBoolean($it)"}, "false");
+        values << new Type('UUID', 'uuid', 'in.readUUID()', {"out.writeUUID($it)"}, "null");
+        values << new Type('byte[]', 'restBuffer', 'in.readBytes(in.available())', {"out.writeBytes($it)"}, "null");
+        values << new Type('Position', 'position', 'Position.read(in)', {"${it}.write(out)"}, "null");
+        values << new Type('ItemStack', 'slot', 'ItemStack.read(in)', {"ItemStack.write($it, out)"}, "null");
+        values << new Type('EntityMetadata', 'entityMetadata', 'EntityMetadata.read(in)', {"${it}.write(out)"}, "null");
     }
 }
 
@@ -206,8 +269,8 @@ abstract class Field {
         this.name = name
     }
 
-    String getJavaType() {
-        parent?.javaType
+    Type getType() {
+        parent?.type
     }
 
     String getName() {
@@ -221,21 +284,21 @@ abstract class Field {
 }
 
 class SimpleField extends Field {
-    String type
+    Type type
 
-    SimpleField(Field parent, String type, String name) {
+    SimpleField(Field parent, Type type, String name) {
         super(parent, name)
         this.type = type
     }
 
     @Override
-    String getJavaType() {
-        getJavaType(type)
+    Type getType() {
+        type
     }
 
     @Override
     void generateDeclaration(File file, String indent) {
-        file << "${indent}public $javaType $name;\n"
+        file << "${indent}public $type.java $name;\n"
     }
 
     @Override
@@ -245,68 +308,43 @@ class SimpleField extends Field {
 
     @Override
     void generateRead(File file, String indent, String name) {
-        file << indent + name + ' = ' + [
-                int           : 'in.readInt()',
-                varint        : 'in.readVarInt()',
-                string        : 'in.readString()',
-                short         : 'in.readShort()',
-                ushort        : 'in.readUnsignedShort()',
-                long          : 'in.readLong()',
-                byte          : 'in.readByte()',
-                ubyte         : 'in.readUnsignedByte()',
-                float         : 'in.readFloat()',
-                double        : 'in.readDouble()',
-                bool          : 'in.readBoolean()',
-                uuid          : 'in.readUUID()',
-                restBuffer    : "in.readBytes(in.available())",
-                position      : 'Position.read(in)',
-                slot          : 'ItemStack.read(in)',
-                entityMetadata: 'EntityMetadata.read(in)',
-        ][type] + ";\n"
+        file << indent + name + ' = ' + type.read + ";\n"
     }
 
     @Override
     void generateWrite(File file, String indent, String name) {
-        file << indent + [
-                int           : "out.writeInt($name)",
-                varint        : "out.writeVarInt($name)",
-                string        : "out.writeString($name)",
-                short         : "out.writeShort($name)",
-                ushort        : "out.writeShort($name)",
-                long          : "out.writeLong($name)",
-                byte          : "out.writeByte($name)",
-                ubyte         : "out.writeByte($name)",
-                float         : "out.writeFloat($name)",
-                double        : "out.writeDouble($name)",
-                bool          : "out.writeBoolean($name)",
-                uuid          : "out.writeUUID($name)",
-                restBuffer    : "out.writeBytes($name)",
-                position      : "${name}.write(out)",
-                slot          : "ItemStack.write(${name}, out)",
-                entityMetadata: "${name}.write(out)",
-                container     : "${name}.write(out)",
-        ][type] + ";\n"
+        file << indent + type.write(name) + ";\n"
+    }
+}
+
+class VoidField extends Field {
+    Type type
+
+    VoidField(Field parent, String name) {
+        super(parent, name)
     }
 
-    static def getJavaType(type) {
-        [
-                int: 'int',
-                varint: 'int',
-                string: 'String',
-                short: 'short',
-                ushort: 'int',
-                long: 'long',
-                byte: 'byte',
-                ubyte: 'int',
-                float: 'float',
-                double: 'double',
-                bool: 'boolean',
-                uuid: 'UUID',
-                restBuffer: 'byte[]',
-                position: 'Position',
-                slot: 'ItemStack',
-                entityMetadata: 'EntityMetadata',
-        ][type]
+    @Override
+    Type getType() {
+        type
+    }
+
+    @Override
+    void generateDeclaration(File file, String indent) {
+        file << "${indent}public $type.java $name;\n"
+    }
+
+    @Override
+    void generateLocalDeclaration(File file, String indent) {
+    }
+
+    @Override
+    void generateRead(File file, String indent, String name) {
+        file << indent + name + ' = ' + type.defaultValue + ";\n"
+    }
+
+    @Override
+    void generateWrite(File file, String indent, String name) {
     }
 }
 
@@ -318,8 +356,9 @@ class CountField extends Field {
     For forField
     CountTransformation countTransformation;
 
-    String getJavaType() {
-        child.javaType
+    @Override
+    Type getType() {
+        child.type
     }
 
     @Override
@@ -349,10 +388,15 @@ class CountedField extends Field {
     Field count
     Field counted
 
-    CountedField(Field parent, String name, String countType) {
+    CountedField(Field parent, String name, Type countType) {
         super(parent, name)
         count = new CountField(this, "${->this.name}\$count")
         count.child = new SimpleField(count, countType, null)
+    }
+
+    @Override
+    Type getType() {
+        counted.type
     }
 
     @Override
@@ -379,20 +423,21 @@ class CountedField extends Field {
 }
 
 class CountedBufferField extends CountedField {
-    CountedBufferField(Field parent, String name, String countType) {
+    CountedBufferField(Field parent, String name, Type countType) {
         super(parent, name, countType)
         counted = new BufferField(this, name, count, new NoCountTransformation())
     }
 }
 
 class CountedArrayField extends CountedField {
-    CountedArrayField(Field parent, String name, String countType) {
+    CountedArrayField(Field parent, String name, Type countType) {
         super(parent, name, countType)
         counted = new ArrayField(this, name, count, new NoCountTransformation())
     }
 }
 
 class BufferField extends Field implements CountField.For {
+    static Type type = new Type('byte[]', 'buffer', null, null, "null")
     Field count
     CountTransformation countTransformation
 
@@ -407,6 +452,11 @@ class BufferField extends Field implements CountField.For {
         }
         count.forField = this
         count.countTransformation = countTransformation
+    }
+
+    @Override
+    Type getType() {
+        type
     }
 
     @Override
@@ -436,12 +486,20 @@ class BufferField extends Field implements CountField.For {
 }
 
 @InheritConstructors
-class ConditionField extends Field {
-    String condition
+class SwitchField extends Field {
+    Field compareTo
+    Map<String, Field> cases = [:]
+    Field defaultCase
 
-    ConditionField(Field parent, String name, String condition) {
+    SwitchField(Field parent, String name, Field compareTo) {
         super(parent, name)
-        this.condition = condition
+        this.compareTo = compareTo
+
+    }
+
+    @Override
+    Type getType() {
+        child.type
     }
 
     @Override
@@ -456,16 +514,66 @@ class ConditionField extends Field {
 
     @Override
     void generateRead(File file, String indent, String name) {
-        file << "${indent}if ($condition) {\n"
-        child.generateRead(file, indent + '\t', name)
-        file << indent + '}\n'
+        if (compareTo.type.java == 'boolean') {
+            def onTrue = cases.containsKey("true") && !(cases.get("true") instanceof VoidField) ? cases.get("true") : defaultCase
+            def onFalse = cases.containsKey("false") && !(cases.get("false") instanceof VoidField) ? cases.get("false") : defaultCase
+            file << "${indent}if ($compareTo.name) {\n"
+            onTrue.generateRead(file, indent + '\t', name)
+            file << indent + '} else {\n'
+            onFalse.generateRead(file, indent + '\t', name)
+            file << indent + '}\n'
+        } else {
+            file << "${indent}switch ($compareTo.name) {\n"
+            cases.each {
+                if (compareTo.type.java == 'String') {
+                    file << "$indent\tcase \"$it.key\": {\n"
+                } else {
+                    file << "$indent\tcase $it.key: {\n"
+                }
+                it.value.generateRead(file, indent + '\t\t', name)
+                file << "$indent\t\tbreak;\n"
+                file << "$indent\t}\n"
+            }
+            file << "$indent\tdefault:\n"
+            if (defaultCase != null) {
+                defaultCase.generateRead(file, indent + '\t\t', name)
+            } else {
+                file << "$indent\t\tthrow new IllegalArgumentException(String.valueOf($compareTo.name));\n"
+            }
+            file << indent + '}\n'
+        }
     }
 
     @Override
     void generateWrite(File file, String indent, String name) {
-        file << "${indent}if ($condition) {\n"
-        child.generateWrite(file, indent + '\t', name)
-        file << indent + '}\n'
+        if (compareTo.type.java == 'boolean') {
+            def onTrue = cases.containsKey("true") && !(cases.get("true") instanceof VoidField) ? cases.get("true") : defaultCase
+            def onFalse = cases.containsKey("false") && !(cases.get("false") instanceof VoidField) ? cases.get("false") : defaultCase
+            file << "${indent}if ($compareTo.name) {\n"
+            onTrue.generateWrite(file, indent + '\t', name)
+            file << indent + '} else {\n'
+            onFalse.generateWrite(file, indent + '\t', name)
+            file << indent + '}\n'
+        } else {
+            file << "${indent}switch ($compareTo.name) {\n"
+            cases.each {
+                if (compareTo.type.java == 'String') {
+                    file << "$indent\tcase \"$it.key\": {\n"
+                } else {
+                    file << "$indent\tcase $it.key: {\n"
+                }
+                it.value.generateWrite(file, indent + '\t\t', name)
+                file << "$indent\t\tbreak;\n"
+                file << "$indent\t}\n"
+            }
+            file << "$indent\tdefault:\n"
+            if (defaultCase != null) {
+                defaultCase.generateWrite(file, indent + '\t\t', name)
+            } else {
+                file << "$indent\t\tthrow new IllegalArgumentException(String.valueOf($compareTo.name));\n"
+            }
+            file << indent + '}\n'
+        }
     }
 }
 
@@ -488,13 +596,13 @@ class ArrayField extends Field implements CountField.For {
     }
 
     @Override
-    String getJavaType() {
-        "$child.javaType[]"
+    Type getType() {
+        new Type("$child.type.java[]", null, null, null, "null")
     }
 
     @Override
     void generateDeclaration(File file, String indent) {
-        file << "${indent}public $javaType $name;\n"
+        file << "${indent}public $type.java $name;\n"
     }
 
     @Override
@@ -506,7 +614,7 @@ class ArrayField extends Field implements CountField.For {
     void generateRead(File file, String indent, String name) {
         def i = 'i_' + name
         file << indent + "int max_$i = ${countTransformation.transform(file, indent, count.name)};\n"
-        file << indent + "$name = new $child.javaType[max_$i];\n"
+        file << indent + "$name = new $child.type.java[max_$i];\n"
         file << indent + "for (int $i = 0; $i < max_$i; $i++) {\n"
         child.generateRead(file, indent + '\t', "$name[$i]")
         file << indent + '}\n'
@@ -514,7 +622,7 @@ class ArrayField extends Field implements CountField.For {
 
     @Override
     void generateWrite(File file, String indent, String name) {
-        file << indent + "for ($child.javaType $name : this.$name) {\n"
+        file << indent + "for ($child.type.java $name : this.$name) {\n"
         child.generateWrite(file, indent + '\t', name)
         file << indent + '}\n'
     }
@@ -539,7 +647,7 @@ class ContainerField extends Field {
     }
 
     @Override
-    String getJavaType() {
+    Type getType() {
         def name = name
         def parent = parent
         while (parent != null) {
@@ -556,12 +664,12 @@ class ContainerField extends Field {
             }
             parent = parent.parent
         }
-        return name.capitalize()
+        return new Type(name.capitalize(), null, null, null, "null")
     }
 
     @Override
     void generateDeclaration(File file, String indent) {
-        file << "${indent}public $javaType $name;\n"
+        file << "${indent}public $type.java $name;\n"
     }
 
     @Override
@@ -572,7 +680,7 @@ class ContainerField extends Field {
     @Override
     void generateRead(File file, String indent, String name) {
         def args = referenced.collect { ", $it.name" }.join('')
-        file << "$indent${name} = new $javaType();\n"
+        file << "$indent${name} = new $type.java();\n"
         file << "$indent${name}.read(in$args);\n"
     }
 
@@ -596,7 +704,7 @@ class ContainerField extends Field {
     }
 
     void generateClass(File file, String indent) {
-        file << indent + "public static class $javaType {\n"
+        file << indent + "public static class $type.java {\n"
         Parser.generateBody(file, indent + '\t', fields, referenced, containers)
         file << "$indent}\n"
     }

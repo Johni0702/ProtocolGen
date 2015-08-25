@@ -143,7 +143,7 @@
       }
     ]
   },
-  "test_condition_simple": {
+  "test_switch_simple": {
     "id": "0x00",
     "fields": [
       {
@@ -153,13 +153,13 @@
       {
         "name": "inner",
         "type": [
-          "condition",
+          "switch",
           {
-            "field": "before",
-            "values": [
-              2
-            ],
-            "type": "byte"
+            "compareTo": "before",
+            "fields": {
+              "2": "byte"
+            },
+            "default": "void"
           }
         ]
       },
@@ -169,24 +169,23 @@
       }
     ]
   },
-  "test_condition_inverted": {
+  "test_switch_string": {
     "id": "0x00",
     "fields": [
       {
         "name": "before",
-        "type": "byte"
+        "type": "string"
       },
       {
         "name": "inner",
         "type": [
-          "condition",
+          "switch",
           {
-            "field": "before",
-            "values": [
-              2
-            ],
-            "different": true,
-            "type": "byte"
+            "compareTo": "before",
+            "fields": {
+              "Valid": "byte"
+            },
+            "default": "void"
           }
         ]
       },
@@ -196,7 +195,33 @@
       }
     ]
   },
-  "test_condition_multi": {
+  "test_switch_boolean": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "bool"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "true": "byte"
+            },
+            "default": "void"
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_default": {
     "id": "0x00",
     "fields": [
       {
@@ -206,13 +231,168 @@
       {
         "name": "inner",
         "type": [
-          "condition",
+          "switch",
           {
-            "field": "before",
-            "values": [
-              2, 3, 4
-            ],
-            "type": "byte"
+            "compareTo": "before",
+            "fields": {
+              "2": "void"
+            },
+            "default": "byte"
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_no_default": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "2": "byte"
+            }
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_array": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "2": [
+                "array",
+                {
+                  "type": "byte",
+                  "countType": "byte"
+                }
+              ]
+            },
+            "default": "void"
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_array_multi": {
+    "comment": "This packet does not have its own test. It merely exists to make sure variable declaration within switch cases work fine.",
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "2": [
+                "array",
+                {
+                  "type": "byte",
+                  "countType": "byte"
+                }
+              ],
+              "3": [
+                "array",
+                {
+                  "type": "byte",
+                  "countType": "byte"
+                }
+              ]
+            },
+            "default": "void"
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_range": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "2": "byte",
+              "3": "byte",
+              "4": "byte"
+            },
+            "default": "void"
+          }
+        ]
+      },
+      {
+        "name": "after",
+        "type": "byte"
+      }
+    ]
+  },
+  "test_switch_range_multi": {
+    "id": "0x00",
+    "fields": [
+      {
+        "name": "before",
+        "type": "byte"
+      },
+      {
+        "name": "inner",
+        "type": [
+          "switch",
+          {
+            "compareTo": "before",
+            "fields": {
+              "1": "byte",
+              "2": "byte",
+              "3": "void",
+              "4": "byte",
+              "5": "byte"
+            },
+            "default": "void"
           }
         ]
       },
@@ -357,13 +537,13 @@
             {
               "name": "inner",
               "type": [
-                "condition",
+                "switch",
                 {
-                  "field": "outer",
-                  "values": [
-                    1
-                  ],
-                  "type": "byte"
+                  "compareTo": "outer",
+                  "fields": {
+                    "1": "byte"
+                  },
+                  "default": "void"
                 }
               ]
             }
