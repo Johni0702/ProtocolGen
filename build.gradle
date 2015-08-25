@@ -2,7 +2,6 @@ group 'de.johni0702.mc.protocol'
 version '0.1-SNAPSHOT'
 
 apply plugin: 'java'
-apply from: 'generator.gvy'
 
 sourceCompatibility = 1.8
 
@@ -17,6 +16,10 @@ sourceSets {
             compileClasspath += main.output
         }
     }
+}
+
+configurations {
+    genCompile.extendsFrom compile
 }
 
 clean {
@@ -43,13 +46,19 @@ dependencies {
 }
 
 task downloadPacketJson << {
-    def f = file('src/gen/resources/protocol.json')
-    f.getParentFile().mkdirs()
+    def f = new File(downloadPacketJson.getTemporaryDir(), 'protocol.json')
     f.delete()
     f << 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/1.8/enums/protocol.json'.toURL().text
 }
 
-genPacketSources.dependsOn downloadPacketJson
+apply from: 'generator.gvy'
 
-compileJava.dependsOn genPacketSources
+compileGenJava.dependsOn genPacketSources
 compileTestJava.dependsOn genPacketTestSources
+
+jar {
+    dependsOn genClasses
+    dependsOn configurations.runtime
+    from sourceSets.gen.output
+    from { configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) } }
+}
