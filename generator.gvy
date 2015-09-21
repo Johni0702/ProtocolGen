@@ -1,8 +1,8 @@
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 
-task genPacketSources(dependsOn: downloadPacketJson) {
-    def protocolFile = new File(project.downloadPacketJson.getTemporaryDir(), 'protocol.json')
+task genPacketSources() {
+    def protocolFile = file('minecraft-data/enums/protocol.json')
     def outputFolder = file('src/gen/java')
     inputs.file protocolFile
     outputs.dir outputFolder
