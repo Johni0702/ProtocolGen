@@ -48,7 +48,7 @@ dependencies {
 task downloadPacketJson << {
     def f = new File(downloadPacketJson.getTemporaryDir(), 'protocol.json')
     f.delete()
-    f << 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/1.9/enums/protocol.json'.toURL().text
+    f << 'https://raw.githubusercontent.com/PrismarineJS/minecraft-data/master/data/1.9/protocol.json'.toURL().text
 }
 
 apply from: 'generator.gvy'
